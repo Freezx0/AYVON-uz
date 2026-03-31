@@ -1,0 +1,17 @@
+.next
+node_modules
+.env.local
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+dev.log
+data/ayvon-store.json
+data/ayvon.sqlite
+data/ayvon.sqlite-shm
+data/ayvon.sqlite-wal
+after-desktop.png
+after-mobile.png
+current-home-loaded.png
+current-home.png
+current-mobile.png
