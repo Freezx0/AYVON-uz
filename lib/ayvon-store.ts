@@ -319,8 +319,8 @@ function validateWaitlistInput(input: JoinWaitlistInput) {
   }
 }
 
-async function initSupabaseSchema(supabase: ReturnType<typeof getSupabaseAdmin>) {
-  await supabase.sql(`
+async function initSupabaseSchema(supabase: NonNullable<ReturnType<typeof getSupabaseAdmin>>) {
+await (supabase as any).sql(`
 create table if not exists public.ayvon_bookings (
   id text primary key,
   studio_id text not null,
