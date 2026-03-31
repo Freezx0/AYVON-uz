@@ -60,30 +60,42 @@ New bookings appear in the launch feed. Waitlist entries are saved through the b
 
 ## Backend Modes
 
-The project now supports 2 backend modes:
+The project supports 2 backend modes, but they are intended for different environments.
 
 ### Local SQLite backend
-Works out of the box with no extra setup.
+Works out of the box on your machine with no extra setup.
 
 Data is saved in:
 - `data/ayvon.sqlite`
 
 If an older `data/ayvon-store.json` file exists, the app migrates that data into SQLite automatically on first run.
 
-This is the default local database mode and makes the app functional immediately on your machine.
+Use this mode for local development only.
+
+Note:
+- the local fallback uses `node:sqlite`
+- for that reason, local development should run on Node 22+
 
 ### Supabase backend
 If you add Supabase environment variables, the API routes will use Supabase instead of the local SQLite database.
 
-Required env vars in `.env.local`:
+Required env vars:
 
 ```bash
 NEXT_PUBLIC_SUPABASE_URL=...
 SUPABASE_SERVICE_ROLE_KEY=...
 ```
 
+Template:
+- `.env.example`
+
 Schema file:
 - `supabase/ayvon-schema.sql`
+
+Important:
+- hosted deployments should use Supabase
+- the app will not try to write the local SQLite file on Vercel
+- if Supabase env vars are missing in hosted mode, the API returns a clear configuration error instead of silently failing
 
 ## API Routes
 
@@ -104,12 +116,52 @@ These routes power the frontend state and keep the product flow server-backed.
 - SQLite
 - Supabase
 
+## Live Deploy
+
+### Recommended production stack
+- `Vercel` for hosting the Next.js app
+- `Supabase Postgres` for bookings and waitlist
+
+### Why not GitHub Pages
+GitHub Pages only serves static files.
+
+AYVON is not a static site. It uses server routes:
+- `GET /api/launch-state`
+- `POST /api/bookings`
+- `POST /api/waitlist`
+
+It also needs writable server-side persistence for bookings and waitlist.
+
+Because of that, GitHub Pages is not a valid deployment target for this app.
+
+### Vercel + Supabase setup
+1. Create a Supabase project.
+2. Open the SQL editor and run:
+   - `supabase/ayvon-schema.sql`
+3. In Vercel, import this GitHub repository.
+4. Add these environment variables in the Vercel project settings:
+
+```bash
+NEXT_PUBLIC_SUPABASE_URL=...
+SUPABASE_SERVICE_ROLE_KEY=...
+```
+
+5. Trigger a deployment.
+
+After that:
+- `GET /api/launch-state` reads from Supabase
+- `POST /api/bookings` writes real bookings
+- `POST /api/waitlist` writes real waitlist entries
+- the live feed updates from the remote database instead of local SQLite
+
 ## Run
 
 ```bash
 npm install
 npm run dev
 ```
+
+If you want local SQLite mode, use Node 22+.
 
 Or production preview:
 

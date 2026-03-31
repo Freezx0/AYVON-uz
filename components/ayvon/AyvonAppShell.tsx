@@ -214,6 +214,15 @@ export function AyvonAppShell({ view }: { view: AyvonView }) {
   }, [bookingSuccess]);
 
   useEffect(() => {
+    if (!statusMessage || statusTone === 'error') {
+      return;
+    }
+
+    const timer = window.setTimeout(() => setStatusMessage(''), 4200);
+    return () => window.clearTimeout(timer);
+  }, [statusMessage, statusTone]);
+
+  useEffect(() => {
     let isActive = true;
 
     try {
@@ -453,6 +462,12 @@ export function AyvonAppShell({ view }: { view: AyvonView }) {
   }
 
   const backendStatusLabel = isLoadingState ? copy.common.syncingBackend : getBackendLabel(locale, backendMode);
+  const statusClass =
+    statusTone === 'error'
+      ? 'border-[#ef4444]/20 bg-[#ef4444]/10 text-[#b42318]'
+      : statusTone === 'success'
+        ? 'border-[#0f9d8a]/20 bg-[#0f9d8a]/10 text-[#0f9d8a]'
+        : 'border-[var(--line)] bg-white/80 text-[var(--ink)]';
 
   const routeCards: Array<{ href: Route; title: string; description: string }> =
     locale === 'uz'
@@ -539,6 +554,12 @@ export function AyvonAppShell({ view }: { view: AyvonView }) {
       <main className="min-h-screen px-4 pb-14 pt-4 sm:px-6 lg:px-8">
         <div className="mx-auto flex max-w-[1440px] flex-col gap-6">
           <AyvonTopBar copy={{ ...copy.hero, ...copy.common }} locale={locale} onLocaleChange={setLocale} />
+
+          {statusMessage && view !== 'launch' ? (
+            <div className={`rounded-[24px] border px-5 py-4 text-sm leading-6 ${statusClass}`}>
+              <p className="copy-safe">{statusMessage}</p>
+            </div>
+          ) : null}
 
           {view === 'home' ? (
             <>

@@ -1,6 +1,5 @@
 ﻿import { existsSync, mkdirSync, readFileSync } from 'fs';
 import path from 'path';
-import { DatabaseSync } from 'node:sqlite';
 import { createClient } from '@supabase/supabase-js';
 import {
   type Booking,
@@ -12,6 +11,8 @@ import {
   calculateBookingTotal,
   getStudioById
 } from '@/lib/ayvon-data';
+
+type DatabaseSync = import('node:sqlite').DatabaseSync;
 
 type LegacyStore = {
   bookings: Booking[];
@@ -46,6 +47,7 @@ type SqliteWaitlistRow = {
 const dataDirectory = path.join(process.cwd(), 'data');
 const legacyStorePath = path.join(dataDirectory, 'ayvon-store.json');
 const sqlitePath = path.join(dataDirectory, 'ayvon.sqlite');
+const hostedBackendErrorMessage = 'Hosted deployment requires Supabase. Set NEXT_PUBLIC_SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY.';
 
 let sqliteDb: DatabaseSync | null = null;
 
@@ -66,6 +68,27 @@ function createTimestamp(date = new Date()) {
   };
 }
 
+function hasSupabaseAdminConfig() {
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL ?? process.env.SUPABASE_URL;
+  const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+
+  return Boolean(supabaseUrl && serviceRoleKey);
+}
+
+function isHostedRuntime() {
+  return process.env.VERCEL === '1' || typeof process.env.VERCEL_ENV === 'string';
+}
+
+function assertHostedBackendConfig() {
+  if (isHostedRuntime() && !hasSupabaseAdminConfig()) {
+    throw new Error(hostedBackendErrorMessage);
+  }
+}
+
+export function isHostedBackendConfigError(error: unknown) {
+  return error instanceof Error && error.message === hostedBackendErrorMessage;
+}
+
 function getSupabaseAdmin() {
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL ?? process.env.SUPABASE_URL;
   const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
@@ -81,13 +104,14 @@ function getSupabaseAdmin() {
   });
 }
 
-function ensureSqliteDb() {
+async function ensureSqliteDb() {
   if (sqliteDb) {
     return sqliteDb;
   }
 
   mkdirSync(dataDirectory, { recursive: true });
 
+  const { DatabaseSync } = await import('node:sqlite');
   sqliteDb = new DatabaseSync(sqlitePath);
   sqliteDb.exec(`
     PRAGMA journal_mode = WAL;
@@ -182,8 +206,8 @@ function migrateLegacyJsonStore(db: DatabaseSync) {
   }
 }
 
-function loadSqliteState(): LaunchState {
-  const db = ensureSqliteDb();
+async function loadSqliteState(): Promise<LaunchState> {
+  const db = await ensureSqliteDb();
   const bookings = db
     .prepare(
       `SELECT id, studio_id, studio_name, city, slot, seats, duration, total, guest, brief, created_at_label, created_at_sort
@@ -325,10 +349,15 @@ export async function loadLaunchState(): Promise<LaunchState> {
         backend: 'supabase'
       };
     }
-  } catch {
+  } catch (error) {
+    if (isHostedRuntime()) {
+      throw error;
+    }
+
     // Fallback to local SQLite if Supabase is unavailable or not migrated yet.
   }
 
+  assertHostedBackendConfig();
   return loadSqliteState();
 }
 
@@ -399,12 +428,17 @@ export async function createBooking(input: CreateBookingInput): Promise<LaunchSt
       }
 
       return loadLaunchState();
-    } catch {
+    } catch (error) {
+      if (isHostedRuntime()) {
+        throw error;
+      }
+
       // Fall through to the local SQLite database if the remote insert fails.
     }
   }
 
-  const db = ensureSqliteDb();
+  assertHostedBackendConfig();
+  const db = await ensureSqliteDb();
   db.prepare(`
     INSERT INTO ayvon_bookings_local (
       id, studio_id, studio_name, city, slot, seats, duration, total, guest, brief, created_at_label, created_at_sort
@@ -463,12 +497,17 @@ export async function joinWaitlist(input: JoinWaitlistInput): Promise<LaunchStat
       }
 
       return loadLaunchState();
-    } catch {
+    } catch (error) {
+      if (isHostedRuntime()) {
+        throw error;
+      }
+
       // Fall through to the local SQLite database if the remote insert fails.
     }
   }
 
-  const db = ensureSqliteDb();
+  assertHostedBackendConfig();
+  const db = await ensureSqliteDb();
   db.prepare(`
     INSERT INTO ayvon_waitlist_local (
       id, name, email, goal, city, created_at_label, created_at_sort

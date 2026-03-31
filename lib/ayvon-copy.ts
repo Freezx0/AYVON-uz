@@ -353,6 +353,19 @@ export function translateErrorMessage(message: string, locale: Locale) {
   if (lower.includes('unable to join waitlist')) {
     return locale === 'uz' ? 'Waitlist ga qo‘shib bo‘lmadi.' : 'Не удалось записать в waitlist.';
   }
+  if (lower.includes('hosted deployment requires supabase')) {
+    return locale === 'uz'
+      ? 'Live deploy uchun Supabase kerak. Vercel env ga NEXT_PUBLIC_SUPABASE_URL va SUPABASE_SERVICE_ROLE_KEY qo‘shing.'
+      : 'Для live deploy нужен Supabase. Добавьте NEXT_PUBLIC_SUPABASE_URL и SUPABASE_SERVICE_ROLE_KEY в env Vercel.';
+  }
+  if (lower.includes('relation') && lower.includes('ayvon_')) {
+    return locale === 'uz'
+      ? 'Supabase jadvali topilmadi. `supabase/ayvon-schema.sql` ni production bazaga qo‘llang.'
+      : 'Таблицы Supabase не найдены. Примените `supabase/ayvon-schema.sql` к production базе.';
+  }
+  if (lower.includes('supabase query failed')) {
+    return locale === 'uz' ? 'Supabase so‘rovi bajarilmadi.' : 'Запрос к Supabase не выполнился.';
+  }
 
   return message;
 }

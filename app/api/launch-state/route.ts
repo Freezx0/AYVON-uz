@@ -1,7 +1,8 @@
 import { NextResponse } from 'next/server';
-import { loadLaunchState } from '@/lib/ayvon-store';
+import { isHostedBackendConfigError, loadLaunchState } from '@/lib/ayvon-store';
 
 export const dynamic = 'force-dynamic';
+export const runtime = 'nodejs';
 
 export async function GET() {
   try {
@@ -9,6 +10,7 @@ export async function GET() {
     return NextResponse.json(state);
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Unable to load launch state.';
-    return NextResponse.json({ error: message }, { status: 500 });
+    const status = isHostedBackendConfigError(error) ? 503 : 500;
+    return NextResponse.json({ error: message }, { status });
   }
 }

@@ -63,7 +63,9 @@ export function LaunchSection({
             <p className="eyebrow">{copy.liveFeedEyebrow}</p>
             <h2 className="title-balance mt-3 text-3xl font-semibold tracking-[-0.04em] sm:text-4xl">{copy.liveFeedTitle}</h2>
           </div>
-          {statusMessage ? <p className={`max-w-md rounded-full px-4 py-2 text-sm ${statusClass}`}>{statusMessage}</p> : null}
+          {statusMessage ? (
+            <p className={`copy-safe max-w-md rounded-[20px] px-4 py-3 text-sm leading-6 ${statusClass}`}>{statusMessage}</p>
+          ) : null}
         </div>
 
         <div className="mt-6 grid gap-4">

@@ -1,7 +1,8 @@
 import { NextResponse } from 'next/server';
-import { createBooking } from '@/lib/ayvon-store';
+import { createBooking, isHostedBackendConfigError } from '@/lib/ayvon-store';
 
 export const dynamic = 'force-dynamic';
+export const runtime = 'nodejs';
 
 export async function POST(request: Request) {
   try {
@@ -10,7 +11,11 @@ export async function POST(request: Request) {
     return NextResponse.json(state, { status: 201 });
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Unable to create booking.';
-    const status = /unknown|invalid|required|short|not enough|exceeds|not found/i.test(message) ? 400 : 500;
+    const status = isHostedBackendConfigError(error)
+      ? 503
+      : /unknown|invalid|required|short|not enough|exceeds|not found/i.test(message)
+        ? 400
+        : 500;
     return NextResponse.json({ error: message }, { status });
   }
 }
