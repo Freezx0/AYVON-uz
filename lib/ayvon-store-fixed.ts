@@ -1,4 +1,4 @@
-﻿import { existsSync, mkdirSync, readFileSync } from 'fs';
+import { existsSync, mkdirSync, readFileSync } from 'fs';
 import path from 'path';
 import { createClient } from '@supabase/supabase-js';
 import {
@@ -355,12 +355,7 @@ create index if not exists ayvon_waitlist_created_at_idx
 }
 
 async function loadSupabaseState() {
-  const supabase = getSupabaseAdmin();
-  if (!supabase) {
-    return null;
-  }
-
-  await initSupabaseSchema(supabase);
+const supabase = getSupabaseAdmin();\n  if (!supabase) {\n    return null;\n  }\n\n  await initSupabaseSchema(supabase);
 
   const [bookingsResult, waitlistResult] = await Promise.all([
     supabase.from('ayvon_bookings').select('*').order('created_at', { ascending: false }),
